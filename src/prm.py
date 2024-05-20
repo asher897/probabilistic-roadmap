@@ -103,7 +103,7 @@ class PRM(object):
         self.nodes = np.append(self.nodes, np.array([start_node, goal_node]))
 
         nodes_visited = np.array([])
-        goal_threshold = 0.01
+        goal_threshold = 0.001
         last_g = goal_node.g
         current_g = 0
         while not nodes_visited.size or abs(current_g - last_g) > goal_threshold:
@@ -164,8 +164,8 @@ class PRM(object):
             x = random.randint(self.x_range[0], self.x_range[1])
             y = random.randint(self.y_range[0], self.y_range[1])
             node = Node(Coordinate(x, y))
-            if np.any(self.nodes == node):
-                continue
+            # if np.any(self.nodes == node):
+            #     continue
 
             collision = False
             for obstacle in self.obstacles:
@@ -173,7 +173,7 @@ class PRM(object):
                     collision = True
                     break
 
-            if not collision:
+            if not collision and not np.any(self.nodes == node):
                 self.find_node_neighbours(node)
                 self.nodes = np.append(self.nodes, np.array([node]))
                 i += 1
@@ -193,11 +193,11 @@ class PRM(object):
                 new_node.add_edge(Edge(new_node, node))
 
     def is_collision(self, node, new_node,  m, c, obstacle):
-        y = m * obstacle.top_left.x + c
+        y = m * obstacle.top_left.x + c if m != float("inf") else float("inf")
         if self.is_in_collision(node, new_node, obstacle.top_left.x, y, obstacle):
             return True
 
-        y = m * obstacle.bottom_right.x + c
+        y = m * obstacle.bottom_right.x + c if m != float("inf") else float("inf")
         if self.is_in_collision(node, new_node, obstacle.bottom_right.x, y, obstacle):
             return True
 
@@ -208,6 +208,8 @@ class PRM(object):
         x = (obstacle.bottom_right.y - c) / m if m != 0 else float("inf")
         if self.is_in_collision(node, new_node, x, obstacle.bottom_right.y, obstacle):
             return True
+
+        return False
 
     @staticmethod
     def is_in_collision(node, new_node, x, y, obstacle):
@@ -220,11 +222,11 @@ class PRM(object):
                 nodes_sorted = sorted([node, new_node], key=lambda n: n.y)
                 return nodes_sorted[1].y > obstacle.top_left.y and nodes_sorted[0].y < obstacle.bottom_right.y
         elif (obstacle.top_left.x <= x <= obstacle.bottom_right.x) and (obstacle.top_left.y >= y >= obstacle.bottom_right.y):
-            nodes_sorted = sorted([node, new_node], key=lambda n: n.x)
-            x_collision = nodes_sorted[0].x < obstacle.top_left.x and nodes_sorted[1].x > obstacle.bottom_right.x
-            nodes_sorted = sorted([node, new_node], key=lambda n: n.y)
-            y_collision = nodes_sorted[1].y > obstacle.top_left.y and nodes_sorted[0].y < obstacle.bottom_right.y
-            return x_collision or y_collision
+            x_nodes_sorted = sorted([node, new_node], key=lambda n: n.x)
+            x_bounds = x_nodes_sorted[0].x <= x <= x_nodes_sorted[1].x
+            y_nodes_sorted = sorted([node, new_node], key=lambda n: n.y)
+            y_bounds = y_nodes_sorted[1].y >= y >= y_nodes_sorted[0].y
+            return x_bounds and y_bounds
 
     def set_batch_size(self, batch_size):
         self.BATCH_SIZE = batch_size
