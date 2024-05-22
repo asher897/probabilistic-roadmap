@@ -113,7 +113,6 @@ class PRM(object):
             current_g = goal_node.g
 
         self.plot_path(nodes_visited)
-        print("Path taken")
         for node in nodes_visited:
             print(node.coords)
 

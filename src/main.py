@@ -33,6 +33,5 @@ def main():
     # Run algorithm
     prm_instnace.generate_map(start_point, goal_point)
 
-
 if __name__ == "__main__":
     main()
