@@ -1,3 +1,8 @@
+
+# Dean Solomon - 2347848
+# Aaron Sher - 2568961
+# Riot Ndlovu - 2096330
+
 from prm import PRM, Coordinate
 
 def main():
