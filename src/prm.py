@@ -96,7 +96,7 @@ class PRM(object):
             obstacles.append(Obstacle(obs[0], obs[1]))
         return obstacles
 
-    def generate_map(self, start_point: Coordinate, goal: Coordinate, ):
+    def generate_map(self, start_point: Coordinate, goal: Coordinate):
         start_node = Node(start_point)
         goal_node = Node(goal)
         start_node.g = 0
@@ -178,21 +178,15 @@ class PRM(object):
                 self.nodes = np.append(self.nodes, np.array([node]))
                 i += 1
 
+    ''' Updated find_node_neighbours method to use collision_free '''
     def find_node_neighbours(self, new_node: Node):
         for node in self.nodes:
-            m = (new_node.y - node.y) / (new_node.x - node.x) if new_node.x != node.x else float("inf")
-            c = new_node.y - m*new_node.x
-
-            is_collision = False
-            for obstacle in self.obstacles:
-                if self.is_collision(node, new_node, m, c, obstacle):
-                    is_collision = True
-                    break
-            if not is_collision:
+            if self.collision_free(node.coords, new_node.coords):  # Use collision_free method for consistency
                 node.add_edge(Edge(node, new_node))
                 new_node.add_edge(Edge(new_node, node))
 
-    def is_collision(self, node, new_node,  m, c, obstacle):
+    ''' Updated is_collision method to use collision_free '''
+    def is_collision(self, node, new_node, m, c, obstacle):
         y = m * obstacle.top_left.x + c if m != float("inf") else float("inf")
         if self.is_in_collision(node, new_node, obstacle.top_left.x, y, obstacle):
             return True
@@ -228,6 +222,33 @@ class PRM(object):
             y_bounds = y_nodes_sorted[1].y >= y >= y_nodes_sorted[0].y
             return x_bounds and y_bounds
 
+    ''' Added collision_free method to use intersects for robust collision checking '''
+    def collision_free(self, node: Coordinate, new_node: Coordinate) -> bool:
+        for obstacle in self.obstacles:
+            if self.intersects(node, new_node, obstacle):
+                return False
+        return True
+
+    ''' Added intersects method to check if path intersects with obstacle corners '''
+    def intersects(self, node: Coordinate, new_node: Coordinate, obstacle: Obstacle) -> bool:
+        def ccw(A, B, C):
+            return (C.y - A.y) * (B.x - A.x) > (B.y - A.y) * (C.x - A.x)
+
+        def intersect(A, B, C, D):
+            return ccw(A, C, D) != ccw(B, C, D) and ccw(A, B, C) != ccw(A, B, D)
+
+        corners = [
+            Coordinate(obstacle.top_left.x, obstacle.top_left.y),
+            Coordinate(obstacle.top_left.x, obstacle.bottom_right.y),
+            Coordinate(obstacle.bottom_right.x, obstacle.top_left.y),
+            Coordinate(obstacle.bottom_right.x, obstacle.bottom_right.y)
+        ]
+
+        for i in range(4):
+            if intersect(node, new_node, corners[i], corners[(i + 1) % 4]):
+                return True
+        return False
+
     def set_batch_size(self, batch_size):
         self.BATCH_SIZE = batch_size
 
@@ -257,5 +278,3 @@ class PRM(object):
         plt.ylabel('Y-axis')
         plt.title('2D Domain with Obstacles')
         plt.savefig("./path_taken.png")
-
-
