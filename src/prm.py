@@ -164,8 +164,8 @@ class PRM(object):
             x = random.randint(self.x_range[0], self.x_range[1])
             y = random.randint(self.y_range[0], self.y_range[1])
             node = Node(Coordinate(x, y))
-            # if np.any(self.nodes == node):
-            #     continue
+            if np.any(self.nodes == node):
+                continue
 
             collision = False
             for obstacle in self.obstacles:
@@ -173,7 +173,7 @@ class PRM(object):
                     collision = True
                     break
 
-            if not collision and not np.any(self.nodes == node):
+            if not collision:
                 self.find_node_neighbours(node)
                 self.nodes = np.append(self.nodes, np.array([node]))
                 i += 1
